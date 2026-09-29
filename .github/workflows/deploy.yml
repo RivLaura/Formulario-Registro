@@ -1,0 +1,91 @@
+name: Deploy Laravel to InfinityFree
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v6
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:v2
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias JavaScript
+        run: npm ci
+
+      - name: Compilar assets
+        run: npm run build
+
+      - name: Crear archivo de producción
+        run: |
+          cat > .env <<'EOF'
+          APP_NAME=Formulario-Registro
+          APP_ENV=production
+          APP_KEY=${{ secrets.APP_KEY }}
+          APP_DEBUG=false
+          APP_URL=https://formulario-registro.infinityfreeapp.com
+
+          LOG_CHANNEL=stack
+          LOG_LEVEL=error
+
+          DB_CONNECTION=mysql
+          DB_HOST=sql213.infinityfree.com
+          DB_PORT=3306
+          DB_DATABASE=if0_43045141_formulario
+          DB_USERNAME=if0_43045141
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+
+          SESSION_DRIVER=file
+          CACHE_STORE=file
+          QUEUE_CONNECTION=sync
+
+          MAIL_MAILER=smtp
+          MAIL_HOST=smtp-relay.brevo.com
+          MAIL_PORT=587
+          MAIL_USERNAME=${{ secrets.BREVO_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.BREVO_PASSWORD }}
+          MAIL_ENCRYPTION=tls
+          MAIL_FROM_ADDRESS=${{ secrets.BREVO_FROM_ADDRESS }}
+          MAIL_FROM_NAME=Formulario-Registro
+          EOF
+
+      - name: Desplegar en InfinityFree
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          server-dir: /htdocs/
+          security: loose
+          timeout: 60000
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/tests/**
+            **/database/database.sqlite
