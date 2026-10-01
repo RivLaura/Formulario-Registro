@@ -6,10 +6,17 @@ use App\Http\Controllers\RegisterController;
 use App\Mail\TestBrevoMail; 
 use App\Http\Controllers\MailController;
 
-Route::get('/test-mail', function () { 
-    Mail::to('rmlaura97@gmail.com')->send(new TestBrevoMail()); 
-    return 'OK: Mail enviado'; 
-}); 
+Route::get('/test-mail', function () {
+    Mail::to('rmlaura97@gmail.com')->send(
+        new TestBrevoMail(
+            'Laura',
+            'Prueba Brevo SMTP',
+            'Hola 👋, esto es una prueba con Brevo SMTP en Laravel.'
+        )
+    );
+
+    return 'OK: Mail enviado';
+});
 
 Route::get('/mail', [MailController::class, 'formulario'])
     ->name('mail.formulario');
